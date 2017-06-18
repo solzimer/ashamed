@@ -1,0 +1,23 @@
+{
+  "name": "ashamed",
+  "version": "0.0.1",
+  "description": "Node cluster async hierarchical shared memory",
+  "author": "David Gómez Matarrodona <solzimer@gmail.com>",
+  "url": "https://github.com/owner/project/issues",
+  "email": "solzimer@gmail.com",
+  "main": "main.js",
+  "license": "MIT",
+  "repository": "solzimer/ashamed",
+  "keywords": [
+    "cluster",
+    "shared",
+    "memory",
+    "hierarchical",
+    "json",
+    "async"
+  ],
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}
