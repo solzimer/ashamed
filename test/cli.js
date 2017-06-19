@@ -1,21 +1,34 @@
-const cluster = require('cluster');
-const shm = require('../main.js');
+const
+	cluster = require('cluster'),
+	express = require('express'),
+	bodyParser = require('body-parser'),
+	os = require("os"),
+	shm = require('../main.js');
 
 if(cluster.isMaster) {
-	cluster.fork();
-	setInterval(()=>{
-		shm.get("path/to/key",(err,res)=>{
-			if(err) console.log(err);
-			else console.log(res);
-		});
-	},1000);
+	os.cpus().forEach(cpu=>cluster.fork());
 }
 else {
-	var i=0;
-	setInterval(()=>{
-		var data = {key : "mykey", val : `myval_${i++}`};
-		shm.set("path/to/key",data,(err,res)=>{
-			if(err) console.error("From worker",err);
+	const app = express();
+
+	app.use(bodyParser.json());
+
+	app.get('/shm/*', (req,res)=>{
+		var path = req.params[0];
+		shm.get(path,false,(err,data)=>{
+			res.send(data);
 		});
-	},100);
+	});
+
+	app.post('/shm/*', (req,res)=>{
+		var path = req.params[0];
+		shm.set(path,req.body,(err,data)=>{
+			res.send(data);
+		});
+	});
+
+	app.listen(3000, function () {
+	  console.log('Worker listening on port 3000!')
+	});
+
 }

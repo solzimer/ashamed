@@ -29,8 +29,8 @@ var fns = {
 
 		send({op:"set",args:[key,item,ttl]},callback);
 	},
-	get(path,callback) {
-		send({op:"get",args:[path]},callback);
+	get(path,realtime,callback) {
+		send({op:"get",args:[path,realtime]},callback);
 	},
 	del(path,callback) {
 		send({op:"del",args:[path]},callback);
