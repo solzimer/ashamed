@@ -64,6 +64,10 @@ function getPath(path,create) {
 	}
 }
 
+function subscribe(path,callback) {
+
+}
+
 var fns = {
 	set(path,item,ttl,callback) {
 		if(typeof(ttl)=="function") {callback = ttl; ttl = null;}
@@ -78,7 +82,11 @@ var fns = {
 	get(path,realtime,callback) {
 		if(typeof(realtime)=="function") {callback = realtime; realtime = false;}
 
+		if(realtime)
+			subscribe(path,callback);;
+
 		var root = getPath(path);
+
 		if(root) callback(null,root);
 		else callback("Entry not found",null);
 	},
