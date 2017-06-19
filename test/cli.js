@@ -16,6 +16,6 @@ else {
 		var data = {key : "mykey", val : `myval_${i++}`};
 		shm.set("path/to/key",data,(err,res)=>{
 			if(err) console.error("From worker",err);
-		})
+		});
 	},100);
 }
