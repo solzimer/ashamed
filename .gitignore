@@ -32,7 +32,7 @@ $RECYCLE.BIN/
 ._*
 
 node_modules
-test/db
+bower_components
 
 # Files that might appear in the root of a volume
 .DocumentRevisions-V100

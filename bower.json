@@ -1,0 +1,30 @@
+{
+  "name": "ashamed",
+  "description": "Node cluster async hierarchical shared memory",
+  "main": "main.js",
+  "authors": [
+    "David Gómez Matarrodona <solzimer@gmail.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "cluster",
+    "shared",
+    "memory",
+    "hierarchical",
+    "json",
+    "async"
+  ],
+  "homepage": "https://github.com/solzimer/ashamed",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "^1.6.4",
+    "deep-diff": "^0.3.8",
+    "extend": "^0.1.1"
+  }
+}
