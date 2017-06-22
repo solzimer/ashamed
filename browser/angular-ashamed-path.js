@@ -22,11 +22,14 @@ provider("path",function() {
 				if(create) {root[folder] = {};}
 				else {return null;}
 			}
-			if(!path.length && val)	{
-				if(typeof(root[folder])=="object" && Object.keys(root[folder]).length)
-					extend(root[folder],val);
-				else
-					root[folder] = val;
+			if(!path.length && val!==undefined)	{
+				if(typeof(root[folder])=="object" && Object.keys(root[folder]).length) {
+					if(typeof(val)=="object") extend(true,root[folder],val);
+					else root[folder] = val;
+				}
+				else {
+					root[folder] = val;					
+				}
 			}
 			root = root[folder];
 			if(!path.length) return root;

@@ -94,6 +94,13 @@ service("ashamedService",
 					delete item[last];
 				}
 			}
+			else if(diff.kind=="A") {
+				var item = getPath(newPath,false,store);
+				if(item) {
+					if(diff.item.kind=="D") item.pop();
+					else item.push(diff.item.rhs);					
+				}
+			}
 		});
 	}
 
