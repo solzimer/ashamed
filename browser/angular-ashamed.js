@@ -1,4 +1,4 @@
-angular.module("ashamed",[]).
+angular.module("ashamed",["ashamed-path"]).
 
 provider("ashamedConfig",function(){
 	var self = this;
@@ -16,98 +16,118 @@ provider("ashamedConfig",function(){
 }).
 
 service("ashamedService",
-	["ashamedConfig","$rootScope","$http","$q",
-	function(config,$rootScope,$http,$q){
+	["ashamedConfig","path","$rootScope","$http","$q",
+	function(config,path,$rootScope,$http,$q){
 
-	const CHANNEL = "ashamed";
-	const extend = angular.merge;
-	var opts = {realtime:config.realtime};
-	var store = {}
-	var url = {
+	const
+		CHANNEL = "ashamed";
+		extend = angular.merge,
+		strToPath = path.strToPath,
+		pathToStr = path.pathToStr,
+		getPath = path.getPath;
+
+	const url = {
 		ws : "ws://"+config.host+config.base+"/ws/shm",
 		http : "http://"+config.host+config.base+"/shm"
 	}
 
-	function strToPath(path) {
-		return Array.isArray(path)?
-			path :
-			path.replace(/ /g,"").split("/").filter(s=>s.length);
-	}
+	var opts = {realtime:config.realtime};
+	var store = {}
+	var pending = {};
+	var client = init();
 
-	function pathToStr(path) {
-		return typeof(path)=="string"? path : path.join("/");
-	}
-
-	function getPath(path,create,src,val) {
-		var root = src || store;
-		path = strToPath(path || []);
-		while(path.length) {
-			let folder = path.shift();
-			if(!root[folder]) {
-				if(create) {root[folder] = {};}
-				else {return null;}
-			}
-			if(!path.length && val)	{
-				if(typeof(root[folder])=="object" && Object.keys(root[folder]).length) {
-					extend(root[folder],val);
-				}
-				else {
-					root[folder] = val;
-				}
-			}
-			root = root[folder];
-			if(!path.length) return root;
+	/**
+	 * Sends a message to the server
+	 * @param msg mixed
+	 * @param callback fn
+	 */
+	function send(msg,callback) {
+		msg.channel = CHANNEL;
+		if(callback) {
+			// Correlation ID to the callback
+			msg.cid = `ws_${Math.random()}`;
+			pending[msg.cid] = callback;
 		}
+
+		client.then(ws=>{ws.send(JSON.stringify(msg));});
 	}
 
-	function modelUpdate(path,changes) {
+	/**
+	 * Handles the websocket responses
+	 * @param msg Websocket message
+	 */
+	function handleMessage(msg) {
+		msg = JSON.parse(msg.data);
+		// If channel is incorrect, do nothing
+		if(msg.channel!=CHANNEL) return;
+		if(msg.type == "model-update") {modelUpdate(msg);}
+		else if(msg.type == "response") {modelResponse(msg);}
+
+		// Apply scope, because websocket flow runs outside angular cycle
+		$rootScope.$apply();
+	}
+
+	/**
+	 * Updates the subscribed model with external changes
+	 * @param msg Websocket message data
+	 */
+	function modelUpdate(msg) {
+		var [path, changes] = msg.args;
 		changes = changes || [];
+
+		// For each change
 		changes.forEach(diff=>{
+			// If something has been added or modified
 			if(diff.kind=="N" || diff.kind=="E") {
+				// Real path of the change
 				var newPath = (path+"/"+diff.path.join("/")).split("/");
-				getPath(newPath,false,store,diff.rhs);
+				// If we are subscribed to the relative path
+				if(getPath(path,false,store)) {
+					// Apply changes
+					getPath(newPath,true,store,diff.rhs);
+				}
 			}
 		});
 	}
 
-	function handleMessage(msg) {
-		msg = JSON.parse(msg.data);
-		if(msg.channel!=CHANNEL) return;
-		if(msg.type == "model-update") {
-			modelUpdate.apply(this,msg.args);
+	function modelResponse(msg) {
+		var cid = msg.cid;
+		var [err,data] = msg.args;
+
+		if(!pending[cid]) return;
+		else {
+			var cb = pending[cid];
+			delete pending[cid];
+			cb(err,data);
 		}
-		$rootScope.$apply();
 	}
 
 	function init() {
+		var q = $q.defer();
 		var ws = new WebSocket(url.ws);
 		ws.onerror = (err)=>console.log(err);
 		ws.onmessage = handleMessage;
+		ws.onopen = ()=>q.resolve(ws);
+		return q.promise;
 	}
 
 	this.get = function(path,options) {
 		var q = $q.defer();
+		var cid = "ws_"+Math.random();
 
 		options = extend({},opts,options);
+		pending[cid] = (err,data)=> {
+			if(err) {q.reject(err);	}
+			else if(options.realtime) {q.resolve(getPath(path,true,store,data));}
+			else {q.resolve(data);}
+		}
 
-		// If options.realtime, create path, so we can be subscribed
-		// to changes in model
-		getPath(path,options.realtime);
-
-		$http.get(url.http+path).then(req=>{
-			if(options.realtime) {
-				var k = getPath(path,true,store,req.data);
-				q.resolve(k);
-			}
-			else {
-				q.resolve(req.data);
-			}
-		},err=>{
-			q.reject(err);
+		send({op:"get", args:[path,options]},(err,data)=> {
+			if(err && err.code) {q.reject(err);	}
+			else if(options.realtime) {q.resolve(getPath(path,true,store,data));}
+			else {q.resolve(data);}
 		});
 
 		return q.promise;
 	}
-
-	init();
 }]);
