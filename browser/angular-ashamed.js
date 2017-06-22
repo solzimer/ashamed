@@ -77,14 +77,21 @@ service("ashamedService",
 
 		// For each change
 		changes.forEach(diff=>{
+			// Real path of the change
+			var newPath = (path+"/"+diff.path.join("/")).split("/");
 			// If something has been added or modified
 			if(diff.kind=="N" || diff.kind=="E") {
-				// Real path of the change
-				var newPath = (path+"/"+diff.path.join("/")).split("/");
 				// If we are subscribed to the relative path
 				if(getPath(path,false,store)) {
 					// Apply changes
 					getPath(newPath,true,store,diff.rhs);
+				}
+			}
+			else if(diff.kind=="D") {
+				var last = newPath.pop();
+				var item = getPath(newPath,false,store);
+				if(item) {
+					delete item[last];
 				}
 			}
 		});
