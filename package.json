@@ -1,6 +1,6 @@
 {
   "name": "ashamed",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Node cluster realtime async hierarchical shared memory, for server and browser",
   "author": "David Gómez Matarrodona <solzimer@gmail.com>",
   "url": "https://github.com/owner/project/issues",
