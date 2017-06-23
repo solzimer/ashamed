@@ -1,8 +1,14 @@
 const cluster = require('cluster');
 
 if(cluster.isMaster) {
-	module.exports = require('./lib/master.js');
+	module.exports = {
+		SharedMemory : require('./lib/master.js'),
+		Server : require('./lib/api.js')
+	}
 }
 else {
-	module.exports = require('./lib/worker.js');
+	module.exports = {
+		SharedMemory : require('./lib/worker.js'),
+		Server : require('./lib/api.js')
+	}
 }

@@ -27,8 +27,8 @@ service("ashamedService",
 		getPath = path.getPath;
 
 	const url = {
-		ws : "ws://"+config.host+config.base+"/ws/shm",
-		http : "http://"+config.host+config.base+"/shm"
+		ws : "ws://"+config.host+config.base+"/ws",
+		http : "http://"+config.host+config.base
 	}
 
 	var opts = {realtime:config.realtime};
@@ -81,25 +81,18 @@ service("ashamedService",
 			var newPath = (path+"/"+diff.path.join("/")).split("/");
 			// If something has been added or modified
 			if(diff.kind=="N" || diff.kind=="E") {
-				// If we are subscribed to the relative path
-				if(getPath(path,false,store)) {
-					// Apply changes
-					getPath(newPath,true,store,diff.rhs);
-				}
+				// Apply changes
+				getPath(newPath,true,store,diff.rhs);
 			}
 			else if(diff.kind=="D") {
 				var last = newPath.pop();
-				var item = getPath(newPath,false,store);
-				if(item) {
-					delete item[last];
-				}
+				var item = getPath(newPath,true,store);
+				delete item[last];
 			}
 			else if(diff.kind=="A") {
-				var item = getPath(newPath,false,store);
-				if(item) {
-					if(diff.item.kind=="D") item.pop();
-					else item.push(diff.item.rhs);					
-				}
+				item = getPath(newPath,true,store);
+				if(diff.item.kind=="D") item.pop();
+				else item.push(diff.item.rhs);
 			}
 		});
 	}
