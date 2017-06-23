@@ -1,7 +1,7 @@
 {
   "name": "ashamed",
   "version": "0.0.1",
-  "description": "Node cluster async hierarchical shared memory",
+  "description": "Node cluster realtime async hierarchical shared memory, for server and browser",
   "author": "David Gómez Matarrodona <solzimer@gmail.com>",
   "url": "https://github.com/owner/project/issues",
   "email": "solzimer@gmail.com",
@@ -13,17 +13,19 @@
     "shared",
     "memory",
     "hierarchical",
+    "realtime",
+    "server",
+    "browser",
     "json",
     "async"
   ],
   "dependencies": {
-    "deep-diff": "^0.3.8",
-    "extend": "^3.0.1"
-  },
-  "devDependencies": {
     "body-parser": "^1.17.2",
     "cors": "^2.8.3",
     "express": "^4.15.3",
-    "express-ws": "^3.0.0"
+    "express-ws": "^3.0.0",
+    "deep-diff": "^0.3.8",
+    "extend": "^3.0.1",
+    "websocket": "^1.0.24"
   }
 }
