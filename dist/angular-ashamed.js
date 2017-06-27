@@ -65,6 +65,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             Path = require("./path.js"),
             extend = require("extend"),
             EventEmitter = require('events'),
+            DeepDiff = require('deep-diff'),
+            applyChange = DeepDiff.applyChange,
             strToPath = Path.strToPath,
             pathToStr = Path.pathToStr,
             getPath = Path.getPath;
@@ -74,6 +76,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         var store = {};
         var pending = {};
 
+        var vfn = function vfn() {};
         var CHANNEL = "ashamed";
         var DEF_OPTS = {
             host: "localhost:3000",
@@ -105,23 +108,12 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 changes = _msg$args[1];
 
             changes = changes || [];
+            path = strToPath(path);
 
             // For each change
             changes.forEach(function (diff) {
-                // Real path of the change
-                var newPath = (path + "/" + diff.path.join("/")).split("/");
-                // If something has been added or modified
-                if (diff.kind == "N" || diff.kind == "E") {
-                    // Apply changes
-                    getPath(newPath, true, store, diff.rhs);
-                } else if (diff.kind == "D") {
-                    var last = newPath.pop();
-                    var item = getPath(newPath, true, store);
-                    delete item[last];
-                } else if (diff.kind == "A") {
-                    item = getPath(newPath, true, store);
-                    if (diff.item.kind == "D") item.pop();else item.push(diff.item.rhs);
-                }
+                diff.path = [].concat(path).concat(diff.path);
+                applyChange(store, {}, diff);
             });
         }
 
@@ -156,35 +148,60 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                     ws: "ws://" + options.host + options.base + "/ws",
                     http: "http://" + options.host + options.base
                 };
-                var def = q.defer();
-                var ws = new WebSocketClient(_this._url.ws);
-                ws.onerror = function (err) {
-                    return _this.emit("error", new Error("Unable to connect!"));
-                };
-                ws.onopen = function () {
-                    return def.resolve(ws);
-                };
-                ws.onmessage = function (msg) {
-                    handleMessage(msg);
-                    _this.emit("message", msg);
-                };
-                _this._ready = def.promise;
+                _this._err = null;
+                _this.connect();
                 return _this;
             }
 
             _createClass(AshamedClient, [{
                 key: "_send",
                 value: function _send(msg, callback) {
+                    var err = this._err;
                     msg.channel = CHANNEL;
-                    if (callback) {
-                        // Correlation ID to the callback
-                        msg.cid = "ws_" + Math.random();
-                        pending[msg.cid] = callback;
-                    }
+                    callback = callback || vfn;
 
-                    this._ready.then(function (ws) {
-                        ws.send(JSON.stringify(msg));
-                    });
+                    // Correlation ID to the callback
+                    msg.cid = "ws_" + Math.random();
+                    pending[msg.cid] = callback;
+
+                    if (!err) {
+                        this._ready.then(function (ws) {
+                            ws.send(JSON.stringify(msg));
+                        }, function (err) {
+                            err.code = "ERROR";
+                            callback(err, null);
+                        });
+                    } else {
+                        err.code = "ERROR";
+                        callback(err, null);
+                    }
+                }
+            }, {
+                key: "connect",
+                value: function connect() {
+                    var _this2 = this;
+
+                    var def = q.defer();
+                    var ws = new WebSocketClient(this._url.ws);
+                    ws.onerror = function (err) {
+                        _this2._err = "Unable to connect to " + _this2._url.ws;
+                        _this2.emit("error", _this2._err);
+                        def.reject(_this2._err);
+                    };
+                    ws.onopen = function () {
+                        _this2._err = null;
+                        _this2.emit("ready", _this2);
+                        def.resolve(ws);
+                    };
+                    ws.onmessage = function (msg) {
+                        handleMessage(msg);
+                        _this2.emit("message", msg);
+                    };
+                    ws.onclose = function () {
+                        _this2.emit("close");
+                        _this2._err = new Error("Connection has been closed");
+                    };
+                    this._ready = def.promise;
                 }
             }, {
                 key: "get",
@@ -205,13 +222,53 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
                     return def.promise;
                 }
+            }, {
+                key: "set",
+                value: function set(path, item, options) {
+                    var def = q.defer();
+                    var cid = "ws_" + Math.random();
+
+                    options = extend({}, this._options, options);
+                    this._send({ op: "set", args: [path, item, options] }, function (err, data) {
+                        if (err && err.code) {
+                            def.reject(err);
+                        } else if (options.realtime) {
+                            def.resolve(getPath(path, true, store, data));
+                        } else {
+                            def.resolve(data);
+                        }
+                    });
+
+                    return def.promise;
+                }
+            }, {
+                key: "diff",
+                value: function diff(changes) {
+                    var def = q.defer();
+                    var cid = "ws_" + Math.random();
+
+                    this._send({ op: "diff", args: [changes] }, function (err, data) {
+                        if (err && err.code) {
+                            def.reject(err);
+                        } else {
+                            def.resolve(data);
+                        }
+                    });
+
+                    return def.promise;
+                }
+            }, {
+                key: "store",
+                get: function get() {
+                    return store;
+                }
             }]);
 
             return AshamedClient;
         }(EventEmitter);
 
         module.exports = AshamedClient;
-    }, { "./path.js": 3, "events": 4, "extend": 5, "q": 7, "websocket": 8 }], 3: [function (require, module, exports) {
+    }, { "./path.js": 3, "deep-diff": 4, "events": 5, "extend": 6, "q": 8, "websocket": 9 }], 3: [function (require, module, exports) {
         var extend = require("extend");
 
         function strToPath(path) {
@@ -221,12 +278,14 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         }
 
         function pathToStr(path) {
-            return typeof path == "string" ? path : path.join("/");
+            var res = typeof path == "string" ? path : path.join("/");
+            return res.startsWith("/") ? res : "/" + res;
         }
 
         function getPath(path, create, src, val) {
             var root = src || {};
             path = strToPath(path);
+            if (!path.length) return root;
             while (path.length) {
                 var folder = path.shift();
                 if (!root[folder]) {
@@ -253,7 +312,427 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             pathToStr: pathToStr,
             getPath: getPath
         };
-    }, { "extend": 5 }], 4: [function (require, module, exports) {
+    }, { "extend": 6 }], 4: [function (require, module, exports) {
+        (function (global) {
+            (function (global, factory) {
+                (typeof exports === "undefined" ? "undefined" : _typeof(exports)) === 'object' && typeof module !== 'undefined' ? module.exports = factory() : typeof define === 'function' && define.amd ? define(factory) : global.DeepDiff = factory();
+            })(this, function () {
+                'use strict';
+
+                var $scope;
+                var conflict;
+                var conflictResolution = [];
+                if ((typeof global === "undefined" ? "undefined" : _typeof(global)) === 'object' && global) {
+                    $scope = global;
+                } else if (typeof window !== 'undefined') {
+                    $scope = window;
+                } else {
+                    $scope = {};
+                }
+                conflict = $scope.DeepDiff;
+                if (conflict) {
+                    conflictResolution.push(function () {
+                        if ('undefined' !== typeof conflict && $scope.DeepDiff === accumulateDiff) {
+                            $scope.DeepDiff = conflict;
+                            conflict = undefined;
+                        }
+                    });
+                }
+
+                // nodejs compatible on server side and in the browser.
+                function inherits(ctor, superCtor) {
+                    ctor.super_ = superCtor;
+                    ctor.prototype = Object.create(superCtor.prototype, {
+                        constructor: {
+                            value: ctor,
+                            enumerable: false,
+                            writable: true,
+                            configurable: true
+                        }
+                    });
+                }
+
+                function Diff(kind, path) {
+                    Object.defineProperty(this, 'kind', {
+                        value: kind,
+                        enumerable: true
+                    });
+                    if (path && path.length) {
+                        Object.defineProperty(this, 'path', {
+                            value: path,
+                            enumerable: true
+                        });
+                    }
+                }
+
+                function DiffEdit(path, origin, value) {
+                    DiffEdit.super_.call(this, 'E', path);
+                    Object.defineProperty(this, 'lhs', {
+                        value: origin,
+                        enumerable: true
+                    });
+                    Object.defineProperty(this, 'rhs', {
+                        value: value,
+                        enumerable: true
+                    });
+                }
+                inherits(DiffEdit, Diff);
+
+                function DiffNew(path, value) {
+                    DiffNew.super_.call(this, 'N', path);
+                    Object.defineProperty(this, 'rhs', {
+                        value: value,
+                        enumerable: true
+                    });
+                }
+                inherits(DiffNew, Diff);
+
+                function DiffDeleted(path, value) {
+                    DiffDeleted.super_.call(this, 'D', path);
+                    Object.defineProperty(this, 'lhs', {
+                        value: value,
+                        enumerable: true
+                    });
+                }
+                inherits(DiffDeleted, Diff);
+
+                function DiffArray(path, index, item) {
+                    DiffArray.super_.call(this, 'A', path);
+                    Object.defineProperty(this, 'index', {
+                        value: index,
+                        enumerable: true
+                    });
+                    Object.defineProperty(this, 'item', {
+                        value: item,
+                        enumerable: true
+                    });
+                }
+                inherits(DiffArray, Diff);
+
+                function arrayRemove(arr, from, to) {
+                    var rest = arr.slice((to || from) + 1 || arr.length);
+                    arr.length = from < 0 ? arr.length + from : from;
+                    arr.push.apply(arr, rest);
+                    return arr;
+                }
+
+                function realTypeOf(subject) {
+                    var type = typeof subject === "undefined" ? "undefined" : _typeof(subject);
+                    if (type !== 'object') {
+                        return type;
+                    }
+
+                    if (subject === Math) {
+                        return 'math';
+                    } else if (subject === null) {
+                        return 'null';
+                    } else if (Array.isArray(subject)) {
+                        return 'array';
+                    } else if (Object.prototype.toString.call(subject) === '[object Date]') {
+                        return 'date';
+                    } else if (typeof subject.toString === 'function' && /^\/.*\//.test(subject.toString())) {
+                        return 'regexp';
+                    }
+                    return 'object';
+                }
+
+                function deepDiff(lhs, rhs, changes, prefilter, path, key, stack) {
+                    path = path || [];
+                    stack = stack || [];
+                    var currentPath = path.slice(0);
+                    if (typeof key !== 'undefined') {
+                        if (prefilter) {
+                            if (typeof prefilter === 'function' && prefilter(currentPath, key)) {
+                                return;
+                            } else if ((typeof prefilter === "undefined" ? "undefined" : _typeof(prefilter)) === 'object') {
+                                if (prefilter.prefilter && prefilter.prefilter(currentPath, key)) {
+                                    return;
+                                }
+                                if (prefilter.normalize) {
+                                    var alt = prefilter.normalize(currentPath, key, lhs, rhs);
+                                    if (alt) {
+                                        lhs = alt[0];
+                                        rhs = alt[1];
+                                    }
+                                }
+                            }
+                        }
+                        currentPath.push(key);
+                    }
+
+                    // Use string comparison for regexes
+                    if (realTypeOf(lhs) === 'regexp' && realTypeOf(rhs) === 'regexp') {
+                        lhs = lhs.toString();
+                        rhs = rhs.toString();
+                    }
+
+                    var ltype = typeof lhs === "undefined" ? "undefined" : _typeof(lhs);
+                    var rtype = typeof rhs === "undefined" ? "undefined" : _typeof(rhs);
+
+                    var ldefined = ltype !== 'undefined' || stack && stack[stack.length - 1].lhs && stack[stack.length - 1].lhs.hasOwnProperty(key);
+                    var rdefined = rtype !== 'undefined' || stack && stack[stack.length - 1].rhs && stack[stack.length - 1].rhs.hasOwnProperty(key);
+
+                    if (!ldefined && rdefined) {
+                        changes(new DiffNew(currentPath, rhs));
+                    } else if (!rdefined && ldefined) {
+                        changes(new DiffDeleted(currentPath, lhs));
+                    } else if (realTypeOf(lhs) !== realTypeOf(rhs)) {
+                        changes(new DiffEdit(currentPath, lhs, rhs));
+                    } else if (realTypeOf(lhs) === 'date' && lhs - rhs !== 0) {
+                        changes(new DiffEdit(currentPath, lhs, rhs));
+                    } else if (ltype === 'object' && lhs !== null && rhs !== null) {
+                        if (!stack.filter(function (x) {
+                            return x.lhs === lhs;
+                        }).length) {
+                            stack.push({ lhs: lhs, rhs: rhs });
+                            if (Array.isArray(lhs)) {
+                                var i,
+                                    len = lhs.length;
+                                for (i = 0; i < lhs.length; i++) {
+                                    if (i >= rhs.length) {
+                                        changes(new DiffArray(currentPath, i, new DiffDeleted(undefined, lhs[i])));
+                                    } else {
+                                        deepDiff(lhs[i], rhs[i], changes, prefilter, currentPath, i, stack);
+                                    }
+                                }
+                                while (i < rhs.length) {
+                                    changes(new DiffArray(currentPath, i, new DiffNew(undefined, rhs[i++])));
+                                }
+                            } else {
+                                var akeys = Object.keys(lhs);
+                                var pkeys = Object.keys(rhs);
+                                akeys.forEach(function (k, i) {
+                                    var other = pkeys.indexOf(k);
+                                    if (other >= 0) {
+                                        deepDiff(lhs[k], rhs[k], changes, prefilter, currentPath, k, stack);
+                                        pkeys = arrayRemove(pkeys, other);
+                                    } else {
+                                        deepDiff(lhs[k], undefined, changes, prefilter, currentPath, k, stack);
+                                    }
+                                });
+                                pkeys.forEach(function (k) {
+                                    deepDiff(undefined, rhs[k], changes, prefilter, currentPath, k, stack);
+                                });
+                            }
+                            stack.length = stack.length - 1;
+                        } else if (lhs !== rhs) {
+                            // lhs is contains a cycle at this element and it differs from rhs
+                            changes(new DiffEdit(currentPath, lhs, rhs));
+                        }
+                    } else if (lhs !== rhs) {
+                        if (!(ltype === 'number' && isNaN(lhs) && isNaN(rhs))) {
+                            changes(new DiffEdit(currentPath, lhs, rhs));
+                        }
+                    }
+                }
+
+                function accumulateDiff(lhs, rhs, prefilter, accum) {
+                    accum = accum || [];
+                    deepDiff(lhs, rhs, function (diff) {
+                        if (diff) {
+                            accum.push(diff);
+                        }
+                    }, prefilter);
+                    return accum.length ? accum : undefined;
+                }
+
+                function applyArrayChange(arr, index, change) {
+                    if (change.path && change.path.length) {
+                        var it = arr[index],
+                            i,
+                            u = change.path.length - 1;
+                        for (i = 0; i < u; i++) {
+                            it = it[change.path[i]];
+                        }
+                        switch (change.kind) {
+                            case 'A':
+                                applyArrayChange(it[change.path[i]], change.index, change.item);
+                                break;
+                            case 'D':
+                                delete it[change.path[i]];
+                                break;
+                            case 'E':
+                            case 'N':
+                                it[change.path[i]] = change.rhs;
+                                break;
+                        }
+                    } else {
+                        switch (change.kind) {
+                            case 'A':
+                                applyArrayChange(arr[index], change.index, change.item);
+                                break;
+                            case 'D':
+                                arr = arrayRemove(arr, index);
+                                break;
+                            case 'E':
+                            case 'N':
+                                arr[index] = change.rhs;
+                                break;
+                        }
+                    }
+                    return arr;
+                }
+
+                function applyChange(target, source, change) {
+                    if (target && source && change && change.kind) {
+                        var it = target,
+                            i = -1,
+                            last = change.path ? change.path.length - 1 : 0;
+                        while (++i < last) {
+                            if (typeof it[change.path[i]] === 'undefined') {
+                                it[change.path[i]] = typeof change.path[i] === 'number' ? [] : {};
+                            }
+                            it = it[change.path[i]];
+                        }
+                        switch (change.kind) {
+                            case 'A':
+                                applyArrayChange(change.path ? it[change.path[i]] : it, change.index, change.item);
+                                break;
+                            case 'D':
+                                delete it[change.path[i]];
+                                break;
+                            case 'E':
+                            case 'N':
+                                it[change.path[i]] = change.rhs;
+                                break;
+                        }
+                    }
+                }
+
+                function revertArrayChange(arr, index, change) {
+                    if (change.path && change.path.length) {
+                        // the structure of the object at the index has changed...
+                        var it = arr[index],
+                            i,
+                            u = change.path.length - 1;
+                        for (i = 0; i < u; i++) {
+                            it = it[change.path[i]];
+                        }
+                        switch (change.kind) {
+                            case 'A':
+                                revertArrayChange(it[change.path[i]], change.index, change.item);
+                                break;
+                            case 'D':
+                                it[change.path[i]] = change.lhs;
+                                break;
+                            case 'E':
+                                it[change.path[i]] = change.lhs;
+                                break;
+                            case 'N':
+                                delete it[change.path[i]];
+                                break;
+                        }
+                    } else {
+                        // the array item is different...
+                        switch (change.kind) {
+                            case 'A':
+                                revertArrayChange(arr[index], change.index, change.item);
+                                break;
+                            case 'D':
+                                arr[index] = change.lhs;
+                                break;
+                            case 'E':
+                                arr[index] = change.lhs;
+                                break;
+                            case 'N':
+                                arr = arrayRemove(arr, index);
+                                break;
+                        }
+                    }
+                    return arr;
+                }
+
+                function revertChange(target, source, change) {
+                    if (target && source && change && change.kind) {
+                        var it = target,
+                            i,
+                            u;
+                        u = change.path.length - 1;
+                        for (i = 0; i < u; i++) {
+                            if (typeof it[change.path[i]] === 'undefined') {
+                                it[change.path[i]] = {};
+                            }
+                            it = it[change.path[i]];
+                        }
+                        switch (change.kind) {
+                            case 'A':
+                                // Array was modified...
+                                // it will be an array...
+                                revertArrayChange(it[change.path[i]], change.index, change.item);
+                                break;
+                            case 'D':
+                                // Item was deleted...
+                                it[change.path[i]] = change.lhs;
+                                break;
+                            case 'E':
+                                // Item was edited...
+                                it[change.path[i]] = change.lhs;
+                                break;
+                            case 'N':
+                                // Item is new...
+                                delete it[change.path[i]];
+                                break;
+                        }
+                    }
+                }
+
+                function applyDiff(target, source, filter) {
+                    if (target && source) {
+                        var onChange = function onChange(change) {
+                            if (!filter || filter(target, source, change)) {
+                                applyChange(target, source, change);
+                            }
+                        };
+                        deepDiff(target, source, onChange);
+                    }
+                }
+
+                Object.defineProperties(accumulateDiff, {
+
+                    diff: {
+                        value: accumulateDiff,
+                        enumerable: true
+                    },
+                    observableDiff: {
+                        value: deepDiff,
+                        enumerable: true
+                    },
+                    applyDiff: {
+                        value: applyDiff,
+                        enumerable: true
+                    },
+                    applyChange: {
+                        value: applyChange,
+                        enumerable: true
+                    },
+                    revertChange: {
+                        value: revertChange,
+                        enumerable: true
+                    },
+                    isConflict: {
+                        value: function value() {
+                            return 'undefined' !== typeof conflict;
+                        },
+                        enumerable: true
+                    },
+                    noConflict: {
+                        value: function value() {
+                            if (conflictResolution) {
+                                conflictResolution.forEach(function (it) {
+                                    it();
+                                });
+                                conflictResolution = null;
+                            }
+                            return accumulateDiff;
+                        },
+                        enumerable: true
+                    }
+                });
+
+                return accumulateDiff;
+            });
+        }).call(this, typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {});
+    }, {}], 5: [function (require, module, exports) {
         // Copyright Joyent, Inc. and other Node contributors.
         //
         // Permission is hereby granted, free of charge, to any person obtaining a
@@ -523,7 +1002,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         function isUndefined(arg) {
             return arg === void 0;
         }
-    }, {}], 5: [function (require, module, exports) {
+    }, {}], 6: [function (require, module, exports) {
         'use strict';
 
         var hasOwn = Object.prototype.hasOwnProperty;
@@ -610,7 +1089,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             // Return the modified object
             return target;
         };
-    }, {}], 6: [function (require, module, exports) {
+    }, {}], 7: [function (require, module, exports) {
         // shim for using process in browser
         var process = module.exports = {};
 
@@ -796,7 +1275,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         process.umask = function () {
             return 0;
         };
-    }, {}], 7: [function (require, module, exports) {
+    }, {}], 8: [function (require, module, exports) {
         (function (process) {
             // vim:ts=4:sts=4:sw=4:
             /*!
@@ -2828,7 +3307,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 return Q;
             });
         }).call(this, require('_process'));
-    }, { "_process": 6 }], 8: [function (require, module, exports) {
+    }, { "_process": 7 }], 9: [function (require, module, exports) {
         var _global = function () {
             return this;
         }();
@@ -2864,30 +3343,30 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             'w3cwebsocket': NativeWebSocket ? W3CWebSocket : null,
             'version': websocket_version
         };
-    }, { "./version": 9 }], 9: [function (require, module, exports) {
+    }, { "./version": 10 }], 10: [function (require, module, exports) {
         module.exports = require('../package.json').version;
-    }, { "../package.json": 10 }], 10: [function (require, module, exports) {
+    }, { "../package.json": 11 }], 11: [function (require, module, exports) {
         module.exports = {
-            "_from": "websocket",
+            "_args": [["websocket@1.0.24", "/opt/ashamed"]],
+            "_from": "websocket@1.0.24",
             "_id": "websocket@1.0.24",
             "_inBundle": false,
             "_integrity": "sha1-dJA+dfJUW2suHeFCW8HJBZF6GJA=",
             "_location": "/websocket",
             "_phantomChildren": {},
             "_requested": {
-                "type": "tag",
+                "type": "version",
                 "registry": true,
-                "raw": "websocket",
+                "raw": "websocket@1.0.24",
                 "name": "websocket",
                 "escapedName": "websocket",
-                "rawSpec": "",
+                "rawSpec": "1.0.24",
                 "saveSpec": null,
-                "fetchSpec": "latest"
+                "fetchSpec": "1.0.24"
             },
-            "_requiredBy": ["#USER", "/"],
+            "_requiredBy": ["/"],
             "_resolved": "https://registry.npmjs.org/websocket/-/websocket-1.0.24.tgz",
-            "_shasum": "74903e75f2545b6b2e1de1425bc1c905917a1890",
-            "_spec": "websocket",
+            "_spec": "1.0.24",
             "_where": "/opt/ashamed",
             "author": {
                 "name": "Brian McKelvey",
@@ -2898,7 +3377,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             "bugs": {
                 "url": "https://github.com/theturtle32/WebSocket-Node/issues"
             },
-            "bundleDependencies": false,
             "config": {
                 "verbose": false
             },
@@ -2913,7 +3391,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 "typedarray-to-buffer": "^3.1.2",
                 "yaeti": "^0.0.6"
             },
-            "deprecated": false,
             "description": "Websocket Client & Server Library implementing the WebSocket protocol as specified in RFC 6455.",
             "devDependencies": {
                 "buffer-equal": "^1.0.0",
