@@ -229,6 +229,22 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                     return def.promise;
                 }
             }, {
+                key: "path",
+                value: function path(base) {
+                    var def = q.defer();
+                    var cid = "ws_" + Math.random();
+
+                    this._send({ op: "path", args: [base] }, function (err, data) {
+                        if (err && err.code) {
+                            def.reject(err);
+                        } else {
+                            def.resolve(data);
+                        }
+                    });
+
+                    return def.promise;
+                }
+            }, {
                 key: "store",
                 get: function get() {
                     return store;
