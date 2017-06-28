@@ -29,6 +29,10 @@
 		this.get = function(path,options) {
 			return client.get(path,options);
 		}
-	}]);
+
+		this.set = function(path,item,options) {
+			return client.set(path,item,options);
+		}
+}]);
 
 })(window);

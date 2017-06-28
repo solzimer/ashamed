@@ -58,6 +58,10 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 this.get = function (path, options) {
                     return client.get(path, options);
                 };
+
+                this.set = function (path, item, options) {
+                    return client.set(path, item, options);
+                };
             }]);
         })(window);
     }, { "../lib/client.js": 2 }], 2: [function (require, module, exports) {
@@ -3363,27 +3367,45 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         module.exports = require('../package.json').version;
     }, { "../package.json": 11 }], 11: [function (require, module, exports) {
         module.exports = {
-            "_args": [["websocket@1.0.24", "/opt/ashamed"]],
-            "_from": "websocket@1.0.24",
+            "_args": [[{
+                "raw": "websocket@^1.0.24",
+                "scope": null,
+                "escapedName": "websocket",
+                "name": "websocket",
+                "rawSpec": "^1.0.24",
+                "spec": ">=1.0.24 <2.0.0",
+                "type": "range"
+            }, "C:\\t\\ashamed"]],
+            "_from": "websocket@>=1.0.24 <2.0.0",
             "_id": "websocket@1.0.24",
-            "_inBundle": false,
-            "_integrity": "sha1-dJA+dfJUW2suHeFCW8HJBZF6GJA=",
+            "_inCache": true,
             "_location": "/websocket",
+            "_nodeVersion": "7.3.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/websocket-1.0.24.tgz_1482977757939_0.1858439394272864"
+            },
+            "_npmUser": {
+                "name": "theturtle32",
+                "email": "brian@worlize.com"
+            },
+            "_npmVersion": "3.10.10",
             "_phantomChildren": {},
             "_requested": {
-                "type": "version",
-                "registry": true,
-                "raw": "websocket@1.0.24",
-                "name": "websocket",
+                "raw": "websocket@^1.0.24",
+                "scope": null,
                 "escapedName": "websocket",
-                "rawSpec": "1.0.24",
-                "saveSpec": null,
-                "fetchSpec": "1.0.24"
+                "name": "websocket",
+                "rawSpec": "^1.0.24",
+                "spec": ">=1.0.24 <2.0.0",
+                "type": "range"
             },
             "_requiredBy": ["/"],
             "_resolved": "https://registry.npmjs.org/websocket/-/websocket-1.0.24.tgz",
-            "_spec": "1.0.24",
-            "_where": "/opt/ashamed",
+            "_shasum": "74903e75f2545b6b2e1de1425bc1c905917a1890",
+            "_shrinkwrap": null,
+            "_spec": "websocket@^1.0.24",
+            "_where": "C:\\t\\ashamed",
             "author": {
                 "name": "Brian McKelvey",
                 "email": "brian@worlize.com",
@@ -3420,14 +3442,25 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             "directories": {
                 "lib": "./lib"
             },
+            "dist": {
+                "shasum": "74903e75f2545b6b2e1de1425bc1c905917a1890",
+                "tarball": "https://registry.npmjs.org/websocket/-/websocket-1.0.24.tgz"
+            },
             "engines": {
                 "node": ">=0.8.0"
             },
+            "gitHead": "0e15f9445953927c39ce84a232cb7dd6e3adf12e",
             "homepage": "https://github.com/theturtle32/WebSocket-Node",
             "keywords": ["websocket", "websockets", "socket", "networking", "comet", "push", "RFC-6455", "realtime", "server", "client"],
             "license": "Apache-2.0",
             "main": "index",
+            "maintainers": [{
+                "name": "theturtle32",
+                "email": "brian@worlize.com"
+            }],
             "name": "websocket",
+            "optionalDependencies": {},
+            "readme": "ERROR: No README data found!",
             "repository": {
                 "type": "git",
                 "url": "git+https://github.com/theturtle32/WebSocket-Node.git"
