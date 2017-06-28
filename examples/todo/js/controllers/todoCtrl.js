@@ -6,51 +6,52 @@
  * - exposes the model to the template and provides event handlers
  */
 angular.module('todomvc')
-	.controller('TodoCtrl', function TodoCtrl($scope, $routeParams, $filter, ashamedService) {
+	.controller('TodoCtrl', function TodoCtrl($scope, $filter, ashamedService) {
 		'use strict';
 
 		var path = "/app/todo";
-		var todos = $scope.todos = $scope.todos || [];
+		var todos = $scope.todos || [];
 
 		$scope.newTodo = '';
 		$scope.editedTodo = null;
 
-		$scope.$watch('todos', function () {
-			$scope.remainingCount = $filter('filter')(todos, { completed: false }).length;
-			$scope.completedCount = todos.length - $scope.remainingCount;
-			$scope.allChecked = !$scope.remainingCount;
-		}, true);
+		function init() {
+			ashamedService.get(path,{create:true}).then(function(data){
+				return data || ashamedService.set(path,todos);
+			}).then(function(data){
+				todos = $scope.todos = data;
+			}).finally(configure);
+		}
 
-		// Monitor the current route for changes and adjust the filter accordingly.
-		$scope.$on('$routeChangeSuccess', function () {
-			var status = $scope.status = $routeParams.status || '';
-			$scope.statusFilter = (status === 'active') ?
-				{ completed: false } : (status === 'completed') ?
-				{ completed: true } : {};
-		});
-
-		$scope.addTodo = function () {
-			var newTodo = {
-				title: $scope.newTodo.trim(),
-				completed: false
-			};
-
-			if (!newTodo.title) return;
-			$scope.todos.push(newTodo);
-
-			$scope.saving = true;
-			ashamedService.set(path,$scope.todos)
-				.then(function success() {
-					$scope.newTodo = '';
-				})
-				.finally(function () {
+		function configure() {
+			$scope.$watch('todos', function () {
+				$scope.remainingCount = $filter('filter')(todos, { completed: false }).length;
+				$scope.completedCount = todos.length - $scope.remainingCount;
+				$scope.allChecked = !$scope.remainingCount;
+				$scope.saving = true;
+				ashamedService.update(path,todos).finally(function(){
 					$scope.saving = false;
 				});
+			}, true);
+		}
+
+		$scope.addTodo = function () {
+			var newPath = path + "/" + todos.length;
+			var title = $scope.newTodo.trim();
+
+			if (!title) {
+				return;
+			}
+			else {
+				$scope.todos.push({
+					title: title,
+					completed: false
+				});
+			}
 		};
 
 		$scope.editTodo = function (todo) {
 			$scope.editedTodo = todo;
-			// Clone the original todo to restore it on demand.
 			$scope.originalTodo = angular.extend({}, todo);
 		};
 
@@ -101,16 +102,6 @@ angular.module('todomvc')
 			store.put(todo);
 		};
 
-		$scope.toggleCompleted = function (todo, completed) {
-			if (angular.isDefined(completed)) {
-				todo.completed = completed;
-			}
-			store.put(todo, todos.indexOf(todo))
-				.then(function success() {}, function error() {
-					todo.completed = !todo.completed;
-				});
-		};
-
 		$scope.clearCompletedTodos = function () {
 			store.clearCompleted();
 		};
@@ -122,4 +113,6 @@ angular.module('todomvc')
 				}
 			});
 		};
+
+		init();
 	});

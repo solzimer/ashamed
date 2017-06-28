@@ -23,6 +23,8 @@
     "tests"
   ],
   "dependencies": {
-    "angular": "^1.6.4"
+    "angular": "^1.6.4",
+    "todomvc-common": "^1.0.0",
+    "todomvc-app-css": "^1.0.1"    
   }
 }

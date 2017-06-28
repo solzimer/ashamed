@@ -33,6 +33,14 @@
 		this.set = function(path,item,options) {
 			return client.set(path,item,options);
 		}
+
+		this.diff = function(path,changes) {
+			return client.diff(path,changes);
+		}
+
+		this.update = function(path,item) {
+			return client.update(path,item);
+		}
 }]);
 
 })(window);
