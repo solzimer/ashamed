@@ -316,6 +316,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             })(this, function () {
                 'use strict';
 
+                var extend = require("extend");
                 var $scope;
                 var conflict;
                 var conflictResolution = [];
@@ -590,7 +591,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                                 break;
                             case 'E':
                             case 'N':
-                                it[change.path[i]] = change.rhs;
+                                extend(true, it[change.path[i]], change.rhs);
                                 break;
                         }
                     }
@@ -729,7 +730,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 return accumulateDiff;
             });
         }).call(this, typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {});
-    }, {}], 5: [function (require, module, exports) {
+    }, { "extend": 6 }], 5: [function (require, module, exports) {
         // Copyright Joyent, Inc. and other Node contributors.
         //
         // Permission is hereby granted, free of charge, to any person obtaining a
