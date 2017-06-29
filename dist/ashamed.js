@@ -38,7 +38,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             EventEmitter = require('events'),
             DeepDiff = require('deep-diff'),
             diff = DeepDiff.diff,
-            applyChange = DeepDiff.applyChange,
+            applyChange = Path.applyChange,
             strToPath = Path.strToPath,
             pathToStr = Path.pathToStr,
             getPath = Path.getPath;
@@ -75,26 +75,23 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
          * @param msg Websocket message data
          */
         function modelUpdate(msg) {
-            var _msg$args = _slicedToArray(msg.args, 2),
-                path = _msg$args[0],
-                changes = _msg$args[1];
-
-            changes = changes || [];
+            var path = msg.args[0];
+            var changes = msg.args[1] || [];
             path = strToPath(path);
 
             // For each change
             changes.forEach(function (diff) {
                 diff.path = [].concat(path).concat(diff.path);
-                applyChange(store, {}, diff);
+                applyChange(store, diff);
             });
         }
 
         function modelResponse(msg) {
             var cid = msg.cid;
 
-            var _msg$args2 = _slicedToArray(msg.args, 2),
-                err = _msg$args2[0],
-                data = _msg$args2[1];
+            var _msg$args = _slicedToArray(msg.args, 2),
+                err = _msg$args[0],
+                data = _msg$args[1];
 
             if (!pending[cid]) return;else {
                 var cb = pending[cid];
@@ -304,10 +301,81 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             }
         }
 
+        function applyChange(target, change) {
+            if (target && change && change.kind) {
+                var it = target,
+                    i = -1,
+                    last = change.path ? change.path.length - 1 : 0;
+                while (++i < last) {
+                    if (typeof it[change.path[i]] === 'undefined') {
+                        it[change.path[i]] = typeof change.path[i] === 'number' ? [] : {};
+                    }
+                    it = it[change.path[i]];
+                }
+                switch (change.kind) {
+                    case 'A':
+                        applyArrayChange(change.path ? it[change.path[i]] : it, change.index, change.item);
+                        break;
+                    case 'D':
+                        delete it[change.path[i]];
+                        break;
+                    case 'E':
+                    case 'N':
+                        if (typeof it[change.path[i]] == "undefined") it[change.path[i]] = change.rhs;else extend(true, it[change.path[i]], change.rhs);
+                        break;
+                }
+            }
+        }
+
+        function applyArrayChange(arr, index, change) {
+            if (change.path && change.path.length) {
+                var it = arr[index],
+                    i,
+                    u = change.path.length - 1;
+                for (i = 0; i < u; i++) {
+                    it = it[change.path[i]];
+                }
+                switch (change.kind) {
+                    case 'A':
+                        applyArrayChange(it[change.path[i]], change.index, change.item);
+                        break;
+                    case 'D':
+                        delete it[change.path[i]];
+                        break;
+                    case 'E':
+                    case 'N':
+                        it[change.path[i]] = change.rhs;
+                        break;
+                }
+            } else {
+                switch (change.kind) {
+                    case 'A':
+                        applyArrayChange(arr[index], change.index, change.item);
+                        break;
+                    case 'D':
+                        arr = arrayRemove(arr, index);
+                        break;
+                    case 'E':
+                    case 'N':
+                        arr[index] = change.rhs;
+                        break;
+                }
+            }
+            return arr;
+        }
+
+        function arrayRemove(arr, from, to) {
+            var rest = arr.slice((to || from) + 1 || arr.length);
+            arr.length = from < 0 ? arr.length + from : from;
+            arr.push.apply(arr, rest);
+            return arr;
+        }
+
         module.exports = {
             strToPath: strToPath,
             pathToStr: pathToStr,
-            getPath: getPath
+            getPath: getPath,
+            applyChange: applyChange
         };
     }, { "extend": 6 }], 4: [function (require, module, exports) {
         (function (global) {
@@ -316,7 +384,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             })(this, function () {
                 'use strict';
 
-                var extend = require("extend");
                 var $scope;
                 var conflict;
                 var conflictResolution = [];
@@ -591,7 +658,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                                 break;
                             case 'E':
                             case 'N':
-                                extend(true, it[change.path[i]], change.rhs);
+                                it[change.path[i]] = change.rhs;
                                 break;
                         }
                     }
@@ -730,7 +797,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 return accumulateDiff;
             });
         }).call(this, typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {});
-    }, { "extend": 6 }], 5: [function (require, module, exports) {
+    }, {}], 5: [function (require, module, exports) {
         // Copyright Joyent, Inc. and other Node contributors.
         //
         // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3345,27 +3412,45 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         module.exports = require('../package.json').version;
     }, { "../package.json": 11 }], 11: [function (require, module, exports) {
         module.exports = {
-            "_args": [["websocket@1.0.24", "/opt/ashamed"]],
-            "_from": "websocket@1.0.24",
+            "_args": [[{
+                "raw": "websocket@^1.0.24",
+                "scope": null,
+                "escapedName": "websocket",
+                "name": "websocket",
+                "rawSpec": "^1.0.24",
+                "spec": ">=1.0.24 <2.0.0",
+                "type": "range"
+            }, "C:\\t\\ashamed"]],
+            "_from": "websocket@>=1.0.24 <2.0.0",
             "_id": "websocket@1.0.24",
-            "_inBundle": false,
-            "_integrity": "sha1-dJA+dfJUW2suHeFCW8HJBZF6GJA=",
+            "_inCache": true,
             "_location": "/websocket",
+            "_nodeVersion": "7.3.0",
+            "_npmOperationalInternal": {
+                "host": "packages-12-west.internal.npmjs.com",
+                "tmp": "tmp/websocket-1.0.24.tgz_1482977757939_0.1858439394272864"
+            },
+            "_npmUser": {
+                "name": "theturtle32",
+                "email": "brian@worlize.com"
+            },
+            "_npmVersion": "3.10.10",
             "_phantomChildren": {},
             "_requested": {
-                "type": "version",
-                "registry": true,
-                "raw": "websocket@1.0.24",
-                "name": "websocket",
+                "raw": "websocket@^1.0.24",
+                "scope": null,
                 "escapedName": "websocket",
-                "rawSpec": "1.0.24",
-                "saveSpec": null,
-                "fetchSpec": "1.0.24"
+                "name": "websocket",
+                "rawSpec": "^1.0.24",
+                "spec": ">=1.0.24 <2.0.0",
+                "type": "range"
             },
             "_requiredBy": ["/"],
             "_resolved": "https://registry.npmjs.org/websocket/-/websocket-1.0.24.tgz",
-            "_spec": "1.0.24",
-            "_where": "/opt/ashamed",
+            "_shasum": "74903e75f2545b6b2e1de1425bc1c905917a1890",
+            "_shrinkwrap": null,
+            "_spec": "websocket@^1.0.24",
+            "_where": "C:\\t\\ashamed",
             "author": {
                 "name": "Brian McKelvey",
                 "email": "brian@worlize.com",
@@ -3402,14 +3487,25 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             "directories": {
                 "lib": "./lib"
             },
+            "dist": {
+                "shasum": "74903e75f2545b6b2e1de1425bc1c905917a1890",
+                "tarball": "https://registry.npmjs.org/websocket/-/websocket-1.0.24.tgz"
+            },
             "engines": {
                 "node": ">=0.8.0"
             },
+            "gitHead": "0e15f9445953927c39ce84a232cb7dd6e3adf12e",
             "homepage": "https://github.com/theturtle32/WebSocket-Node",
             "keywords": ["websocket", "websockets", "socket", "networking", "comet", "push", "RFC-6455", "realtime", "server", "client"],
             "license": "Apache-2.0",
             "main": "index",
+            "maintainers": [{
+                "name": "theturtle32",
+                "email": "brian@worlize.com"
+            }],
             "name": "websocket",
+            "optionalDependencies": {},
+            "readme": "ERROR: No README data found!",
             "repository": {
                 "type": "git",
                 "url": "git+https://github.com/theturtle32/WebSocket-Node.git"
