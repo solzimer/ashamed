@@ -50,7 +50,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 var client = new AshamedClient(config);
 
                 client.on("message", function () {
-                    $rootScope.$digest();
+                    $rootScope.$apply();
                 });
 
                 function resolve(data) {
@@ -86,6 +86,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             DeepDiff = require('deep-diff'),
             diff = DeepDiff.diff,
             applyChange = Path.applyChange,
+            applyDiff = Path.applyDiff,
             strToPath = Path.strToPath,
             pathToStr = Path.pathToStr,
             getPath = Path.getPath;
@@ -230,7 +231,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                         if (err && err.code) {
                             def.reject(err);
                         } else if (options.realtime) {
-                            def.resolve(getPath(path, true, store, data));
+                            applyDiff(store, data, path);
+                            def.resolve(getPath(path, false, store));
                         } else {
                             def.resolve(data);
                         }
@@ -249,7 +251,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                         if (err && err.code) {
                             def.reject(err);
                         } else if (options.realtime) {
-                            def.resolve(getPath(path, true, store, data));
+                            applyDiff(store, data, path);
+                            def.resolve(getPath(path, false, store));
                         } else {
                             def.resolve(data);
                         }
@@ -308,7 +311,9 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
         module.exports = AshamedClient;
     }, { "./path.js": 3, "deep-diff": 4, "events": 5, "extend": 6, "q": 8, "websocket": 9 }], 3: [function (require, module, exports) {
-        var extend = require("extend");
+        var extend = require("extend"),
+            Diff = require("deep-diff"),
+            diff = Diff.diff;
 
         function strToPath(path) {
             path = path || [];
@@ -346,6 +351,15 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 root = root[folder];
                 if (!path.length) return root;
             }
+        }
+
+        function applyDiff(target, source, path) {
+            path = strToPath(path);
+            var changes = diff(target, source) || [];
+            changes.forEach(function (change) {
+                change.path = [].concat(path).concat(change.path || []);
+                applyChange(target, change);
+            });
         }
 
         function applyChange(target, change) {
@@ -422,9 +436,10 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             strToPath: strToPath,
             pathToStr: pathToStr,
             getPath: getPath,
+            applyDiff: applyDiff,
             applyChange: applyChange
         };
-    }, { "extend": 6 }], 4: [function (require, module, exports) {
+    }, { "deep-diff": 4, "extend": 6 }], 4: [function (require, module, exports) {
         (function (global) {
             (function (global, factory) {
                 (typeof exports === "undefined" ? "undefined" : _typeof(exports)) === 'object' && typeof module !== 'undefined' ? module.exports = factory() : typeof define === 'function' && define.amd ? define(factory) : global.DeepDiff = factory();
