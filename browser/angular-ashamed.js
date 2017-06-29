@@ -19,20 +19,17 @@
 		}
 	});
 
-	shm.service("ashamedService",["ashamedConfig","$q","$rootScope", function(config,$q,$rootScope){
+	shm.service("ashamedService",["ashamedConfig","$q","$rootScope","$timeout",
+	function(config,$q,$rootScope,$timeout){
 		const client = new AshamedClient(config);
 
 		client.on("message",()=>{
-			var c = client;
-			setTimeout(()=>{
-				$rootScope.$apply();
-			});
+			$rootScope.$apply();
 		});
 
 		function resolve(data) {
 			var q = $q.defer();
-			setTimeout(()=>{
-				$rootScope.$apply();
+			$timeout(()=>{
 				q.resolve(data);
 			});
 			return q.promise;

@@ -46,20 +46,16 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                 };
             });
 
-            shm.service("ashamedService", ["ashamedConfig", "$q", "$rootScope", function (config, $q, $rootScope) {
+            shm.service("ashamedService", ["ashamedConfig", "$q", "$rootScope", "$timeout", function (config, $q, $rootScope, $timeout) {
                 var client = new AshamedClient(config);
 
                 client.on("message", function () {
-                    var c = client;
-                    setTimeout(function () {
-                        $rootScope.$apply();
-                    });
+                    $rootScope.$digest();
                 });
 
                 function resolve(data) {
                     var q = $q.defer();
-                    setTimeout(function () {
-                        $rootScope.$apply();
+                    $timeout(function () {
                         q.resolve(data);
                     });
                     return q.promise;
@@ -372,7 +368,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                         break;
                     case 'E':
                     case 'N':
-                        if (typeof it[change.path[i]] == "undefined") it[change.path[i]] = change.rhs;else extend(true, it[change.path[i]], change.rhs);
+                        if (_typeof(it[change.path[i]]) == "object") extend(true, it[change.path[i]], change.rhs);else it[change.path[i]] = change.rhs;
                         break;
                 }
             }

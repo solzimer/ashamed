@@ -321,7 +321,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
                         break;
                     case 'E':
                     case 'N':
-                        if (typeof it[change.path[i]] == "undefined") it[change.path[i]] = change.rhs;else extend(true, it[change.path[i]], change.rhs);
+                        if (_typeof(it[change.path[i]]) == "object") extend(true, it[change.path[i]], change.rhs);else it[change.path[i]] = change.rhs;
                         break;
                 }
             }

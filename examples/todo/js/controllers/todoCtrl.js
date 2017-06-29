@@ -14,6 +14,7 @@ angular.module('todomvc')
 
 		$scope.newTodo = '';
 		$scope.editedTodo = null;
+		$scope.saving = false;
 
 		function init() {
 			ashamedService.get(path,{create:true}).then(function(data){
