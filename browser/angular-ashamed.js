@@ -30,8 +30,9 @@
 		function resolve(data) {
 			var q = $q.defer();
 			$timeout(()=>{
-				q.resolve(data);
-			});
+				$rootScope.$apply();
+			},10);
+			q.resolve(data);
 			return q.promise;
 		}
 

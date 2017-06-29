@@ -15,7 +15,9 @@ angular.module('todomvc')
 		$scope.newTodo = '';
 		$scope.editedTodo = null;
 		$scope.saving = false;
+		$scope.editing = false;
 
+		// Initialize the storage
 		function init() {
 			ashamedService.get(path,{create:true}).then(function(data){
 				return data || ashamedService.set(path,todos);
@@ -24,14 +26,18 @@ angular.module('todomvc')
 			}).finally(configure);
 		}
 
+		// Configure the controller, once we've got the storage
 		function configure() {
 			$scope.$watch('todos', function () {
 				$scope.remainingCount = $filter('filter')(todos, { completed: false }).length;
 				$scope.completedCount = todos.length - $scope.remainingCount;
 				$scope.allChecked = !$scope.remainingCount;
 				$scope.saving = true;
+
+				// Data will be updated (only the changes)
 				ashamedService.update(path,todos).finally(function(){
 					$scope.saving = false;
+					$scope.editing = false;
 				});
 			}, true);
 		}
@@ -44,10 +50,7 @@ angular.module('todomvc')
 				return;
 			}
 			else {
-				$scope.todos.push({
-					title: title,
-					completed: false
-				});
+				todos.push({title:title, completed:false});
 			}
 		};
 
@@ -56,36 +59,19 @@ angular.module('todomvc')
 			$scope.originalTodo = angular.extend({}, todo);
 		};
 
-		$scope.saveEdits = function (todo, event) {
-			// Blur events are automatically triggered after the form submit event.
-			// This does some unfortunate logic handling to prevent saving twice.
-			if (event === 'blur' && $scope.saveEvent === 'submit') {
-				$scope.saveEvent = null;
-				return;
-			}
+		$scope.saveEdits = function (todo) {
+			// Prevents saving twice if event is fired more than one time
+			if($scope.editing) return;
+			else $scope.editing = true;
 
-			$scope.saveEvent = event;
-
+			// ESC key was pressed previously. Do nothing
 			if ($scope.reverted) {
-				// Todo edits were reverted-- don't save.
-				$scope.reverted = null;
+				$scope.reverted = false;
+				$scope.editing = false;
 				return;
 			}
 
 			todo.title = todo.title.trim();
-
-			if (todo.title === $scope.originalTodo.title) {
-				$scope.editedTodo = null;
-				return;
-			}
-
-			store[todo.title ? 'put' : 'delete'](todo)
-				.then(function success() {}, function error() {
-					todo.title = $scope.originalTodo.title;
-				})
-				.finally(function () {
-					$scope.editedTodo = null;
-				});
 		};
 
 		$scope.revertEdits = function (todo) {
@@ -96,22 +82,20 @@ angular.module('todomvc')
 		};
 
 		$scope.removeTodo = function (todo) {
-			store.delete(todo);
-		};
-
-		$scope.saveTodo = function (todo) {
-			store.put(todo);
+			todos.splice(todos.indexOf(todo),1);
 		};
 
 		$scope.clearCompletedTodos = function () {
-			store.clearCompleted();
+			todos.filter(function(todo){
+				return todo.completed;
+			}).forEach(function(todo){
+				todos.splice(todos.indexOf(todo),1);
+			});
 		};
 
 		$scope.markAll = function (completed) {
 			todos.forEach(function (todo) {
-				if (todo.completed !== completed) {
-					$scope.toggleCompleted(todo, completed);
-				}
+				todo.completed = true;
 			});
 		};
 
