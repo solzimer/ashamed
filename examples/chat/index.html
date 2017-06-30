@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en" data-framework="angularjs">
+	<head>
+		<meta charset="utf-8">
+		<title>Ashamed • Chat</title>
+		<link rel="stylesheet" href="../../bower_components/bootstrap/dist/css/bootstrap.min.css">
+		<link rel="stylesheet" href="../../bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
+		<link rel="stylesheet" href="css/chat.css">
+		<style>[ng-cloak] { display: none; }</style>
+	</head>
+	<body ng-app="chat" ng-controller="ChatController">
+		<div class="site-wrapper">
+      <div class="site-wrapper-inner">
+        <div class="cover-container">
+          <div class="masthead clearfix">
+            <div class="inner">
+              <h3 class="masthead-brand">Ashamed Chat</h3>
+              <nav>
+                <ul class="nav masthead-nav">
+                  <li class="active"><a href="#">Home</a></li>
+                  <li><a href="#">Features</a></li>
+                  <li><a href="#">Contact</a></li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+
+          <div class="inner cover" ng-show="!chat">
+						<form ng-submit="join()">
+            	<input type="text" class="form-control join-input" placeholder="Join a chat" ng-model="chatName" no-spaces/>
+						</form>
+            <p class="lead">This is a demonstration of how easy is create a realtime app using Ashamed.</p>
+            <p class="lead">
+              <a href="#" class="btn btn-lg btn-default">Join</a>
+            </p>
+          </div>
+					<div class="inner cover" ng-show="chat">
+						<div class="panel panel-primary" style="text-align:left">
+							<div class="panel-heading">
+								<h3 class="panel-title">{{chatName}}</h3>
+							</div>
+							<div class="panel-body">
+								<div ng-repeat="item in chat.history track by $index">
+									{{item.nickName}} : {{item.message}}
+								</div>
+								<form ng-submit="add()">
+									<input type="text" ng-model="message" placeholder="Type a message"/>
+								</form>
+							</div>
+						</div>
+					</div>
+
+          <div class="mastfoot">
+            <div class="inner">
+              <p>Cover template for <a href="http://getbootstrap.com">Bootstrap</a>, by <a href="https://twitter.com/mdo">@mdo</a>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+		<script id="chat-window" type="text/html">
+
+		</script>
+		<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+		<script src="../../bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+		<script src="../../bower_components/angular/angular.min.js"></script>
+		<script src="../../dist/angular-ashamed.js"></script>
+		<script src="js/app.js"></script>
+		<script src="js/directives/nospaces.js"></script>
+		<script src="js/controllers/chatController.js"></script>
+	</body>
+</html>
