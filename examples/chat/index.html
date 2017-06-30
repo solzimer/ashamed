@@ -40,14 +40,14 @@
 								<h3 class="panel-title">{{chatName}}</h3>
 							</div>
 							<div class="panel-body">
-								<div ng-repeat="item in chat.history track by $index">
+								<div class="well well-sm" ng-repeat="item in chat.history track by $index">
 									{{item.nickName}} : {{item.message}}
 								</div>
-								<form ng-submit="add()">
-									<input type="text" ng-model="message" placeholder="Type a message"/>
-								</form>
 							</div>
 						</div>
+						<form ng-submit="add()">
+							<input type="text" class="form-control join-input" placeholder="Type a message" ng-model="message"/>
+						</form>
 					</div>
 
           <div class="mastfoot">
