@@ -1,11 +1,11 @@
 angular.module("chat").
 controller("ChatController",function($scope,ashamedService){
-	var MAX = 100;
+	var MAX = 6;
 	var PATH = "/app/chat/channels/";
 	var shm = ashamedService;
 
 	$scope.chatName = "";
-	$scope.nickName = "";
+	$scope.nickName = "anonymous";
 	$scope.message = "";
 	$scope.chat = null;
 
@@ -37,7 +37,7 @@ controller("ChatController",function($scope,ashamedService){
 
 	$scope.add = function() {
 		$scope.chat.history.push({
-			nickName:$scope.nickName||"anonymous",
+			nickName:$scope.nickName,
 			message:$scope.message.trim()
 		});
 		while($scope.chat.history.length>MAX) {

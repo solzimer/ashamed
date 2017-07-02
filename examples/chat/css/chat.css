@@ -19,6 +19,18 @@ a:hover {
   border: 1px solid #fff;
 }
 
+.panel-dark {
+  background: black;
+}
+
+.panel-dark .well {
+    background: rgb(39, 39, 39);
+    border: 1px solid #333;
+}
+
+.right {
+  text-align: right;
+}
 
 /*
  * Base structure
