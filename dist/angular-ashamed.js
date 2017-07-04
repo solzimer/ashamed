@@ -84,8 +84,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             Path = require("./path.js"),
             extend = require("extend"),
             EventEmitter = require('events'),
-            DeepDiff = require('deep-diff'),
-            diff = DeepDiff.diff,
+            diff = Path.diff,
             applyChanges = Path.applyChanges,
             applyDiff = Path.applyDiff,
             strToPath = Path.strToPath,
@@ -313,7 +312,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
         }(EventEmitter);
 
         module.exports = AshamedClient;
-    }, { "./path.js": 3, "deep-diff": 4, "events": 5, "extend": 6, "q": 8, "websocket": 9 }], 3: [function (require, module, exports) {
+    }, { "./path.js": 3, "events": 5, "extend": 6, "q": 8, "websocket": 9 }], 3: [function (require, module, exports) {
         var extend = require("extend"),
             Diff = require("deep-diff"),
             odiff = Diff.diff;
@@ -361,7 +360,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
         function diff(target, source) {
             var changes = odiff(target, source);
-            return JSON.parse(JSON.stringify(changes));
+            return changes ? JSON.parse(JSON.stringify(changes)) : [];
         }
 
         function applyDiff(target, source, path) {
@@ -470,6 +469,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
             strToPath: strToPath,
             pathToStr: pathToStr,
             getPath: getPath,
+            diff: diff,
             applyDiff: applyDiff,
             applyChange: applyChange,
             applyChanges: applyChanges
