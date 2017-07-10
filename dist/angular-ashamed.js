@@ -378,10 +378,17 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
         function applyChanges(target, patch, path) {
             patch.forEach(function (p) {
+                p.opath = p.path;
                 p.path = concat(path, p.path);
-                getPath(p.path, false, target);
+                var np = strToPath(p.path);
+                if (np.length > 1) np.pop();
+                getPath(np, true, target);
             });
             jiff.patchInPlace(patch, target);
+            patch.forEach(function (p) {
+                p.path = p.opath;
+                delete p.opath;
+            });
         }
 
         function applyChange(target, change) {
