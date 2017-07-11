@@ -8,6 +8,10 @@
   "main": "main.js",
   "license": "MIT",
   "repository": "solzimer/ashamed",
+  "bin": {
+    "shm-server": "bin/shm-server.js",
+    "shm-cli": "bin/shm-cli.js"
+  },
   "keywords": [
     "cluster",
     "shared",
