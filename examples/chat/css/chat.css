@@ -20,18 +20,22 @@ a:hover {
 }
 
 .panel-dark {
-  background: black;
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .panel-dark .well {
-    background: rgb(39, 39, 39);
-    border: 1px solid #333;
+	background: rgba(255, 255, 255, 0.14);
+	border: 1px solid #b3b3b3;
 }
 
 .right {
   text-align: right;
 }
 
+.max-size {
+	max-height: 600px;
+	overflow-y: auto;
+}
 /*
  * Base structure
  */
@@ -39,6 +43,7 @@ a:hover {
 html,
 body {
   height: 100%;
+	background-image: url('../img/bg.jpg');
   background-color: #333;
 }
 body {
@@ -131,8 +136,9 @@ body {
 
 .join-input {
     font-size: 30px;
-    background-color: rgb(25, 25, 25);
-    border-color: #4e4e4e;
+    background-color: rgba(25, 25, 25, 0.65);
+    border-color: #dedede;
+		color: #dedede;
     width:50%;
     height: 50px;
     text-align: center;

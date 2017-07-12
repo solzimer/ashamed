@@ -26,12 +26,21 @@
           </div>
 
           <div class="inner cover" ng-show="!chat">
-						<form ng-submit="join()">
-            	<input type="text" class="form-control join-input" placeholder="Join a chat" ng-model="chatName" no-spaces/>
-						</form>
+						<div class="row">
+							<div class="col-lg-12">
+								<input type="text" class="form-control join-input" placeholder="nickname" ng-model="nickName"/>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-lg-12">
+								<form ng-submit="join()">
+		            	<input type="text" class="form-control join-input" placeholder="Join a chat" ng-model="chatName" no-spaces/>
+								</form>
+							</div>
+						</div>
             <p class="lead">This is a demonstration of how easy is create a realtime app using Ashamed.</p>
             <p class="lead">
-              <a href="#" class="btn btn-lg btn-default">Join</a>
+              <a href="#" class="btn btn-lg btn-default" ng-click="join()">Join</a>
             </p>
           </div>
 					<div class="inner cover" ng-show="chat">
@@ -39,8 +48,8 @@
 							<div class="panel-heading">
 								<h3 class="panel-title">{{chatName}}</h3>
 							</div>
-							<div class="panel-body">
-								<div class="well well-sm" ng-class="{right:'item.nickName!=nickName'}" ng-repeat="item in chat.history track by $index">
+							<div class="panel-body max-size">
+								<div class="well well-sm" ng-class="{'right':item.nickName==nickName}" ng-repeat="item in chat.history track by $index">
 									{{item.nickName}} : {{item.message}}
 								</div>
 							</div>
